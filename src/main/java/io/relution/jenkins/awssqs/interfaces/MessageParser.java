@@ -32,5 +32,5 @@ public interface MessageParser {
      * @param message The {@link Message} to parse.
      * @return The collection of {@link Event} items contained in the message.
      */
-    List<io.relution.jenkins.awssqs.model.entities.codecommit.ExecuteJenkinsJobEvent> parseMessage(Message message);
+    List<Event> parseMessage(Message message);
 }

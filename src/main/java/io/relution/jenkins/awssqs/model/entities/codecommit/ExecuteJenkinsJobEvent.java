@@ -20,6 +20,13 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 
+/**
+ * not sure this class used for any model
+ * since there is no {@link ExecuteJenkinsJobEvent#jobName} in the Amazon SQS json response
+ *
+ * @deprecated use {@link io.relution.jenkins.awssqs.interfaces.Event} instead.
+ */
+@Deprecated
 public class ExecuteJenkinsJobEvent {
 
     @Expose

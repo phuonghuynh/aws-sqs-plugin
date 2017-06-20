@@ -35,6 +35,12 @@ public interface SQSQueueListener {
     String getQueueUuid();
 
     /**
+     * The subscribed branches this listener is associated with.
+     * @return The subscribed branches this listener is associated with.
+     */
+    String getSubscribedBranches();
+
+    /**
      * The method to be invoked when new messages arrive in the SQS queue this listener is
      * associated with.
      * @param messages The collection of {@link Message} instances that were posted to the queue.
