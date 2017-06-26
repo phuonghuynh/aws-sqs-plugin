@@ -1,4 +1,5 @@
 /*
+ * Copyright 2017 Ribose Inc. <https://www.ribose.com>
  * Copyright 2016 M-Way Solutions GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,6 +44,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -202,6 +204,11 @@ public class SQSTrigger extends Trigger<AbstractProject<?, ?>> implements io.rel
     }
 
     private void execute() {
+        if (this.job == null) {
+            Log.severe("Unexpected error Job is Null");
+            return;
+        }
+
         Log.info("SQS event triggered build of %s", this.job.getFullDisplayName());
         this.executor.execute(this);
     }
@@ -249,7 +256,7 @@ public class SQSTrigger extends Trigger<AbstractProject<?, ?>> implements io.rel
     @Extension
     public static final class DescriptorImpl extends TriggerDescriptor {
 
-        private static final String KEY_SQS_QUEUES = "sqsQueues";
+        public static final String KEY_SQS_QUEUES = "sqsQueues";
         private volatile List<io.relution.jenkins.awssqs.SQSTriggerQueue> sqsQueues;
 
         private volatile transient Map<String, io.relution.jenkins.awssqs.SQSTriggerQueue> sqsQueueMap;
