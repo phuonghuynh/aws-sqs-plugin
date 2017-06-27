@@ -45,7 +45,7 @@ import java.util.UUID;
  * https://wiki.jenkins-ci.org/display/JENKINS/Unit+Test#UnitTest-Overview
  * */
 @RunWith(Parameterized.class)
-public class JenkinsIT {
+public class JenkinsSubscribeBranchIT {
 
     @Parameterized.Parameters
     public static List<ProjectFixture> fixtures() {
@@ -110,7 +110,7 @@ public class JenkinsIT {
     private MockAwsSqs mockAwsSqs;
     private SQSTriggerQueue sqsQueueConfig;
 
-    public JenkinsIT(ProjectFixture projectFixture) {
+    public JenkinsSubscribeBranchIT(ProjectFixture projectFixture) {
         this.projectFixture = projectFixture;
     }
 
