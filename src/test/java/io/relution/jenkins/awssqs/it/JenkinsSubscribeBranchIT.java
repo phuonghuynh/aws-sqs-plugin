@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestBuilder;
 
@@ -38,71 +39,95 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Starts an embedded servlet container so that the test code can exercise user interaction through HTTP and assert based on the outcome.
- *
+ * <p>
  * https://wiki.jenkins-ci.org/display/JENKINS/Unit+Test#UnitTest-Overview
- * */
+ */
 @RunWith(Parameterized.class)
 public class JenkinsSubscribeBranchIT {
 
-    @Parameterized.Parameters
-    public static List<ProjectFixture> fixtures() {
-        return Arrays.asList(
-            new ProjectFixture()//without wildcard
-                .setSendBranches("refs/heads/foo")
-                .setListenBranches("foo")
-                .setShouldStarted(Boolean.TRUE),
+    private final static Logger LOG = Logger.getLogger(JenkinsSubscribeBranchIT.class.getName());
 
-            new ProjectFixture()//prefix wildcard
-                .setSendBranches("refs/heads/foo-bar", "refs/heads/bar/foo", "refs/heads/foo/bar")
-                .setListenBranches("*foo")
-                .setShouldStarted(Boolean.FALSE),
+    @Parameters(name = "{0}")
+    public static List<Object[]> fixtures() {
+        return Arrays.asList(new Object[][]{
+            {
+                "should_trigger_branches_without_wildcard",
+                new ProjectFixture()//without wildcard
+                    .setSendBranches("refs/heads/foo")
+                    .setListenBranches("foo")
+                    .setShouldStarted(Boolean.TRUE)
+            },
+            {
+                "should_not_trigger_prefix_wildcard_branches",
+                new ProjectFixture()//prefix wildcard
+                    .setSendBranches("refs/heads/foo-bar", "refs/heads/bar/foo", "refs/heads/foo/bar")
+                    .setListenBranches("*foo")
+                    .setShouldStarted(Boolean.FALSE)
+            },
+            {
+                "should_trigger_prefix_wildcard_branches",
+                new ProjectFixture()//prefix wildcard
+                    .setSendBranches("refs/heads/bar/foo", "refs/heads/bar-foo")
+                    .setListenBranches("*foo")
+                    .setShouldStarted(Boolean.TRUE),//triggered because of msg "refs/heads/bar-foo"
 
-            new ProjectFixture()//prefix wildcard
-                .setSendBranches("refs/heads/bar/foo", "refs/heads/bar-foo")
-                .setListenBranches("*foo")
-                .setShouldStarted(Boolean.TRUE),//triggered because of msg "refs/heads/bar-foo"
-
-            new ProjectFixture()//suffix wildcard
-                .setSendBranches("refs/heads/foo/bar", "refs/heads/bar/foo", "refs/heads/bar-foo")
-                .setListenBranches("foo*")
-                .setShouldStarted(Boolean.FALSE),
-
-            new ProjectFixture()//suffix wildcard
-                .setSendBranches("refs/heads/bar/foo", "refs/heads/foo-bar")
-                .setListenBranches("foo*")
-                .setShouldStarted(Boolean.TRUE),//triggered because of msg "refs/heads/foo-bar"
-
-            new ProjectFixture()// "*"
-                .setSendBranches("refs/heads/foo/bar", "refs/heads/bar/foo", "refs/heads/bar/foo")
-                .setListenBranches("*")
-                .setShouldStarted(Boolean.FALSE),
-
-            new ProjectFixture()// "*"
-                .setSendBranches("refs/heads/foo", "refs/heads/foo-bar")
-                .setListenBranches("*")
-                .setShouldStarted(Boolean.TRUE),
-
-            new ProjectFixture()// "**"
-                .setSendBranches("refs/heads/foo/bar", "refs/heads/bar/foo", "refs/heads/bar/foo", "refs/heads/foo", "refs/heads/foo-bar")
-                .setListenBranches("**")
-                .setShouldStarted(Boolean.TRUE),
-
-            new ProjectFixture()// "**"
-                .setSendBranches("refs/heads/bar/foo", "refs/heads/bar/foo", "refs/heads/bar/foo-bar", "refs/heads/bar/foo/bar")
-                .setListenBranches("foo**")
-                .setShouldStarted(Boolean.FALSE),
-
-            new ProjectFixture()// "**"
-                .setSendBranches("refs/heads/foo/bar", "refs/heads/foo-bar")
-                .setListenBranches("foo**")
-                .setShouldStarted(Boolean.TRUE)
-        );
+            },
+            {
+                "should_not_trigger_suffix_wildcard_branches",
+                new ProjectFixture()//suffix wildcard
+                    .setSendBranches("refs/heads/foo/bar", "refs/heads/bar/foo", "refs/heads/bar-foo")
+                    .setListenBranches("foo*")
+                    .setShouldStarted(Boolean.FALSE)
+            },
+            {
+                "should_trigger_suffix_wildcard_branches",
+                new ProjectFixture()//suffix wildcard
+                    .setSendBranches("refs/heads/bar/foo", "refs/heads/foo-bar")
+                    .setListenBranches("foo*")
+                    .setShouldStarted(Boolean.TRUE),//triggered because of msg "refs/heads/foo-bar"
+            },
+            {
+                "should_not_trigger_single_star_branches",
+                new ProjectFixture()// "*"
+                    .setSendBranches("refs/heads/foo/bar", "refs/heads/bar/foo", "refs/heads/bar/foo")
+                    .setListenBranches("*")
+                    .setShouldStarted(Boolean.FALSE),
+            },
+            {
+                "should_trigger_single_star_branches",
+                new ProjectFixture()// "*"
+                    .setSendBranches("refs/heads/foo", "refs/heads/foo-bar")
+                    .setListenBranches("*")
+                    .setShouldStarted(Boolean.TRUE),
+            },
+            {
+                "should_not_trigger_double_stars_branches",
+                new ProjectFixture()// "**"
+                    .setSendBranches("refs/heads/bar/foo", "refs/heads/bar/foo", "refs/heads/bar/foo-bar", "refs/heads/bar/foo/bar")
+                    .setListenBranches("foo**")
+                    .setShouldStarted(Boolean.FALSE),
+            },
+            {
+                "should_trigger_double_stars_branches",
+                new ProjectFixture()// "**"
+                    .setSendBranches("refs/heads/foo/bar", "refs/heads/foo-bar")
+                    .setListenBranches("foo**")
+                    .setShouldStarted(Boolean.TRUE)
+            },
+            {
+                "should_trigger_all_branches",
+                new ProjectFixture()// "**"
+                    .setSendBranches("refs/heads/foo/bar", "refs/heads/bar/foo", "refs/heads/bar/foo", "refs/heads/foo", "refs/heads/foo-bar")
+                    .setListenBranches("**")
+                    .setShouldStarted(Boolean.TRUE),
+            }
+        });
     }
-
-    private static final Long TIMEOUT = 36_000L;//in milliseconds, e.g: 300_000 ~ 5 mins
 
     @Rule
     public JenkinsRule jenkinsRule = new JenkinsRule();
@@ -110,15 +135,16 @@ public class JenkinsSubscribeBranchIT {
     private MockAwsSqs mockAwsSqs;
     private SQSTriggerQueue sqsQueueConfig;
 
-    public JenkinsSubscribeBranchIT(ProjectFixture projectFixture) {
+    public JenkinsSubscribeBranchIT(String name, ProjectFixture projectFixture) {
         this.projectFixture = projectFixture;
     }
 
     @Test
     public void shouldPassProjectFixture() throws Exception {
+        LOG.log(Level.INFO, "Running " + this.projectFixture);
         this.mockAwsSqs.send(this.projectFixture.getSendBranches());
         OneShotEvent buildStarted = createFreestyleProject(this.projectFixture.getListenBranches());
-        buildStarted.block(TIMEOUT);
+        buildStarted.block(this.projectFixture.getTimeout());
         Assertions.assertThat(buildStarted.isSignaled()).isEqualTo(this.projectFixture.getShouldStarted());
     }
 
