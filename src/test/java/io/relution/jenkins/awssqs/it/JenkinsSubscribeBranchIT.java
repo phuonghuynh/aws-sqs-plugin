@@ -131,21 +131,26 @@ public class JenkinsSubscribeBranchIT {
 
     @Rule
     public JenkinsRule jenkinsRule = new JenkinsRule();
-    private final ProjectFixture projectFixture;
     private MockAwsSqs mockAwsSqs;
     private SQSTriggerQueue sqsQueueConfig;
 
+    private final ProjectFixture projectFixture;
+    private final String name;
+
     public JenkinsSubscribeBranchIT(String name, ProjectFixture projectFixture) {
         this.projectFixture = projectFixture;
+        this.name = name;
     }
 
     @Test
     public void shouldPassProjectFixture() throws Exception {
-        LOG.log(Level.INFO, "Running " + this.projectFixture);
+        LOG.log(Level.INFO, "[RUN] " + this.name);
+        LOG.log(Level.FINEST, "[FIXTURE] " + this.projectFixture);
         this.mockAwsSqs.send(this.projectFixture.getSendBranches());
         OneShotEvent buildStarted = createFreestyleProject(this.projectFixture.getListenBranches());
         buildStarted.block(this.projectFixture.getTimeout());
         Assertions.assertThat(buildStarted.isSignaled()).isEqualTo(this.projectFixture.getShouldStarted());
+        LOG.log(Level.INFO, "[DONE] " + this.name);
     }
 
     @Before
